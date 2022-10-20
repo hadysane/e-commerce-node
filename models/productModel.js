@@ -1,7 +1,5 @@
 const mongoose = require('mongoose')
 
-
-
 // new instance qu'on utilise car schema est une class
 
 const productSchema = new mongoose.Schema({
@@ -9,12 +7,13 @@ const productSchema = new mongoose.Schema({
     // proprieter en objet avec le type et required // ou string indiquer le type
     name: {
         type: String,
-        required: [true, 'A product name must a name'] // objet [bool, 'message erreur']
+        required: [true, 'A product name must a name'], // objet [bool, 'message erreur'], 
     },
     brand: String,
     product_id: {
         type: Number,
-        require :[true, 'A product must have a product id']
+        require: [true, 'A product must have a product id'],
+        unique: true, 
         // min: [1, 'A product id must have 6 numbers'],
         // max: [6, 'A product id must have 6 numbers'],
     }, 
@@ -33,6 +32,7 @@ const productSchema = new mongoose.Schema({
     weight: Number,
     picture_1: {
         type: String,
+        unique: true, 
         required: [true, 'A product must have a picture']
     },
     picture_2: String,
@@ -51,11 +51,12 @@ const productSchema = new mongoose.Schema({
     color: String,
     bicolors: String,
     genre: {
-        type: String, required: true,
+        type: String,
+        required: true,
         // validation de valeurs | des options à respecter ne pas donner à n'importe quelle valeur 
         enum: {
             values: ['Women', 'Men'],
-            message: 'Genre must be women or Men'
+            message: 'Genre must be women or Men',
         }
     }
 })

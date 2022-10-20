@@ -1,17 +1,32 @@
+const User = require("../models/useModal");
+const AppError = require("../utils/appError");
+const catchAsync = require("../utils/catchAsync");
 
 //----------controller users----------
-exports.getAllUsers = (req, res) => {
+exports.getAllUsers = catchAsync(async (req, res) => {
+    const users = await User.find()
     res.status(200).json({
-        status: 'success'
+        status: 'success', 
+        results: users.length,
+        data: {
+            users,
+        }
     });
-};
+});
 
 
-exports.getUser = (req, res) => {
+exports.getUser = catchAsync(async (req, res) => {
+    const user = await User.findById(req.params.id)
+
+    if (!user) return next(new AppError('No user found with this Id !', 404))
+
     res.status(200).json({
-        status: 'success'
+        status: 'success', 
+        data:{user} 
     });
-};
+
+
+});
 
 exports.createUser = (req, res) => {
     res.status(201)

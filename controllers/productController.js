@@ -1,6 +1,8 @@
 const fs = require('fs');
 const Product = require('../models/productModel')
 const APIFeatures = require('../utils/apiFeatures')
+const catchAsync = require('../utils/catchAsync')
+const AppError = require('../utils/appError')
 
 // const products = JSON.parse(
 //     fs.readFileSync(`${__dirname}/../dev-data/products-simple.json`, 'utf8')
@@ -32,58 +34,72 @@ exports.checkbody = (req, res, next) => {
 
 
 
-
-
 // ------------controllers Product----------------
 
-exports.getAllProducts = async (req, res) => {
+exports.getAllProducts = catchAsync(async (req, res, next) => {
+    
+    const features = new APIFeatures(Product.find(), req.query)
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate()
 
-    try {
+    const products = await features.query;
+    res.status(200).json({
+        status: 'success',
+        result: products.length,
+        data: { products }
+    })
 
-        const features = new APIFeatures(Product.find(), req.query)
-            .filter()
-            .sort()
-            .limitFields()
-            .paginate()
+    
 
-        const products = await features.query;
+    // try {
 
-        //     (<) less than - $lt
+    //     const features = new APIFeatures(Product.find(), req.query)
+    //         .filter()
+    //         .sort()
+    //         .limitFields()
+    //         .paginate()
 
-        //     (>=) greater than equal to - $gte
+    //     const products = await features.query;
 
-        //     (<= ) less than equal to - $lte
-        //  */
-
-
-        res.status(200).json({
-            status: 'success',
-            result: products.length,
-            data: { products }
-        })
-    } catch (err) {
-        console.log(err)
-        return res.status(400).json({ status: 'error', message: err.message })
-    }
+    //     res.status(200).json({
+    //         status: 'success',
+    //         result: products.length,
+    //         data: { products }
+    //     })
+    // } catch (err) {
+    //     console.log(err)
+    //     return res.status(400).json({ status: 'error', message: err.message })
+    // }
 
 
-}
+})
 
-exports.getProduct = async (req, res) => {
+exports.getProduct = catchAsync(async (req, res, next) => {
 
-    try {
-        const product = await Product.findById(req.params.id);
-        res.status(200).json({ status: 'success', data: { product } })
-    } catch (err) {
-        return res.status(400).json({ status: 'error', message: 'No product found with this id 😥 ' })
-    }
+    const product = await Product.findById(req.params.id);
+    //if id product is not found on DB
+    if (!product) return next(new AppError('No product found with this ID !', 404))
+    res.status(200).json({ status: 'success', data: { product } })
+
+    // try {
+    //     const product = await Product.findById(req.params.id);
+    //     res.status(200).json({ status: 'success', data: { product } })
+    // } catch (err) {
+    //     return res.status(400).json({ status: 'error', message: 'No product found with this id 😥 ' })
+    // }
 
     // const id = Number(req.params.id); //Number convertir en nombre
     // const product = products.find((product) => product._id === id);
     // res.status(200).json({ status: 'success', data: { product } })
-}
+})
 
-exports.createProduct = async (req, res) => {
+exports.createProduct = catchAsync(async (req, res, next) => {
+    const product = await Product.create(req.body)
+    res.status(201).json({ status: 'success', data: { product } })
+  
+
     // console.log("body ", req.body)
     // const newId = products[products.length - 1]._id + 1;
 
@@ -107,43 +123,57 @@ exports.createProduct = async (req, res) => {
     // const product = new Product({ name: 'Product' })
     // product.save()
 
-    try {
-        const product = await Product.create(req.body)
-        res.status(201).json({ status: 'success', data: { product } })
-    } catch (err) {
-        res.status(400).json({ status: 'error', message: err.message })
-    }
+    // // try {
+    //     const product = await Product.create(req.body)
+    //     res.status(201).json({ status: 'success', data: { product } })
+    // // } catch (err) {
+    //     // res.status(400).json({ status: 'error', message: err.message })
+    // // }
 
-}
+})
 
 
-exports.updateProduct = async (req, res) => {
-    try {
-        const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-            new: true, // retourner la modification que l'original 
-            runValidators: true
-        })
+exports.updateProduct = catchAsync( async (req, res, next) => {
 
-        res.status(200).json({ status: 'success', data: { product } });
-    } catch (error) {
-        res.status(404).json({ status: 'error', message: error.message })
-    }
+    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+        new: true, // retourner la modification que l'original 
+        runValidators: true
+    })
+
+    res.status(200).json({ status: 'success', data: { product } });
+   
+
+    // try {
+    //     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+    //         new: true, // retourner la modification que l'original 
+    //         runValidators: true
+    //     })
+
+    //     res.status(200).json({ status: 'success', data: { product } });
+    // } catch (error) {
+    //     res.status(404).json({ status: 'error', message: error.message })
+    // }
 
     // const id = Number(req.params.id); //Number convertir en nombre
     // const product = products.find((product) => product._id === id);
     // res
     //     .status(200)
     //     .json({ status: 'success', data: { product: '<Update product>' } });
-};
+});
 
-exports.deleteProduct = async (req, res) => {
+exports.deleteProduct = catchAsync(async (req, res, next) => {    
+    const product = await Product.findByIdAndDelete(req.params.id);
 
-    try {
-        await Product.findByIdAndDelete(req.params.id);
-        res.status(204).json({ status: 'success', data: null });
-    } catch (error) {
-        res.status(404).json({ status: 'error', message: 'Not find ID ' })
-    }
+    if (!product) return next(new AppError('No product found with this ID !', 404))
+    
+    res.status(204).json({ status: 'success', data: null });
+   
+    // try {
+    //     await Product.findByIdAndDelete(req.params.id);
+    //     res.status(204).json({ status: 'success', data: null });
+    // } catch (error) {
+    //     res.status(404).json({ status: 'error', message: 'Not find ID ' })
+    // }
 
 
     // const id = Number(req.params.id); //Number convertir en nombre
@@ -151,4 +181,4 @@ exports.deleteProduct = async (req, res) => {
     // res
     //     .status(204)
     //     .json({ status: 'success', data: null });
-};
+});

@@ -8,7 +8,7 @@ const MONGODB = process.env.MONGODB_DATABASE.replace('<PASSWORD>', process.env.M
 
 
 // mongoose.connect : (url de la base de données,{options}).then(function)
-mongoose.connect(MONGODB).then(() => console.log('DB connection successfully .'))
+mongoose.connect(MONGODB).then(() => console.log('DB connection successfully ✅.'))
 
 // Server
 app.listen(port, () => console.log('listerning on port 3000'));
