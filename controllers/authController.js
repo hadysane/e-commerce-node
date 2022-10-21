@@ -11,6 +11,8 @@ const createJWTToken = (id) => {
     })
 }
 
+// ─── Signup ──────────────────────────────────────────────────────────────────
+
 exports.signup = catchAsync(async(req, res, next) => {
     const user = await User.create(req.body)
 
@@ -22,6 +24,8 @@ exports.signup = catchAsync(async(req, res, next) => {
     // } )
     
 })
+
+// ─── Login ───────────────────────────────────────────────────────────────────
 
 exports.login = catchAsync(async (req, res, next) => {
     const { email, password } = req.body; 
@@ -49,13 +53,55 @@ exports.login = catchAsync(async (req, res, next) => {
 
 })
 
+// ─── Protect ─────────────────────────────────────────────────────────────────
+
 exports.protect = catchAsync(async (req, res, next) => {
-    console.log(req.headers)
+    // console.log(req.headers)
+
     // 1) Getting token and check of it's here
+    let token; 
+    if (req.headers.authorization?.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1]; 
+        // console.log(token)
+    }
+
+    if (!token)
+        return next(
+            new AppError('You are logged in! Please log in to get access', 401)
+        )
 
     // 2) verification Token
 
+    const decoded = jwt.verify(token, process.env.JWT_SECRET)
+
     // 3) check if user still exists
-    
+
+    const currentUser = await User.findById(decoded.id)
+    if (!currentUser)
+        return next(
+            new AppError('The user belongs to this token does not exist', 401)
+        )
+
+    // 4) Check if user changed password after the token was issued 
+    // console.log(decoded.iat)
+    if (currentUser.changedPasswordAfter(decoded.iat))
+        return next(new AppError('User recently changed password ! Please log in again', 401))
+
+
+    // 5) If everything is correct, send user to req.user
+    req.user = currentUser;
+
     next()
 })
+// ─── Restuction By Roles ─────────────────────────────────────────────────────
+
+exports.restrictTo = (...roles) => {
+    
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            // console.log('You are allowed to access this route')
+            return next(new AppError('You do not have permission to perform this action', 403))
+        } 
+        next(); 
+    }
+}
